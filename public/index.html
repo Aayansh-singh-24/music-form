@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Music Mood Mehfil · Diwali Music Survey</title>
+  <meta name="description" content="A quick, anonymous, tap-to-answer survey about how you listen to music. Help a college project build a smarter music recommender.">
+  <meta name="theme-color" content="#FFF4DD">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%AA%94%3C/text%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+  <!-- Reusable rangoli drawing (used as soft background decoration) -->
+  <svg class="sprite" aria-hidden="true" focusable="false">
+    <symbol id="rangoli-art" viewBox="0 0 200 200">
+      <g fill="#FFB020">
+        <ellipse cx="100" cy="40" rx="11" ry="26"/>
+        <ellipse cx="100" cy="40" rx="11" ry="26" transform="rotate(30 100 100)"/>
+        <ellipse cx="100" cy="40" rx="11" ry="26" transform="rotate(60 100 100)"/>
+        <ellipse cx="100" cy="40" rx="11" ry="26" transform="rotate(90 100 100)"/>
+        <ellipse cx="100" cy="40" rx="11" ry="26" transform="rotate(120 100 100)"/>
+        <ellipse cx="100" cy="40" rx="11" ry="26" transform="rotate(150 100 100)"/>
+        <ellipse cx="100" cy="40" rx="11" ry="26" transform="rotate(180 100 100)"/>
+        <ellipse cx="100" cy="40" rx="11" ry="26" transform="rotate(210 100 100)"/>
+        <ellipse cx="100" cy="40" rx="11" ry="26" transform="rotate(240 100 100)"/>
+        <ellipse cx="100" cy="40" rx="11" ry="26" transform="rotate(270 100 100)"/>
+        <ellipse cx="100" cy="40" rx="11" ry="26" transform="rotate(300 100 100)"/>
+        <ellipse cx="100" cy="40" rx="11" ry="26" transform="rotate(330 100 100)"/>
+      </g>
+      <g fill="#F2507B">
+        <ellipse cx="100" cy="66" rx="6" ry="14" transform="rotate(15 100 100)"/>
+        <ellipse cx="100" cy="66" rx="6" ry="14" transform="rotate(45 100 100)"/>
+        <ellipse cx="100" cy="66" rx="6" ry="14" transform="rotate(75 100 100)"/>
+        <ellipse cx="100" cy="66" rx="6" ry="14" transform="rotate(105 100 100)"/>
+        <ellipse cx="100" cy="66" rx="6" ry="14" transform="rotate(135 100 100)"/>
+        <ellipse cx="100" cy="66" rx="6" ry="14" transform="rotate(165 100 100)"/>
+        <ellipse cx="100" cy="66" rx="6" ry="14" transform="rotate(195 100 100)"/>
+        <ellipse cx="100" cy="66" rx="6" ry="14" transform="rotate(225 100 100)"/>
+        <ellipse cx="100" cy="66" rx="6" ry="14" transform="rotate(255 100 100)"/>
+        <ellipse cx="100" cy="66" rx="6" ry="14" transform="rotate(285 100 100)"/>
+        <ellipse cx="100" cy="66" rx="6" ry="14" transform="rotate(315 100 100)"/>
+        <ellipse cx="100" cy="66" rx="6" ry="14" transform="rotate(345 100 100)"/>
+      </g>
+      <g fill="#1FB5A8">
+        <circle cx="100" cy="8" r="4"/>
+        <circle cx="100" cy="8" r="4" transform="rotate(30 100 100)"/>
+        <circle cx="100" cy="8" r="4" transform="rotate(60 100 100)"/>
+        <circle cx="100" cy="8" r="4" transform="rotate(90 100 100)"/>
+        <circle cx="100" cy="8" r="4" transform="rotate(120 100 100)"/>
+        <circle cx="100" cy="8" r="4" transform="rotate(150 100 100)"/>
+        <circle cx="100" cy="8" r="4" transform="rotate(180 100 100)"/>
+        <circle cx="100" cy="8" r="4" transform="rotate(210 100 100)"/>
+        <circle cx="100" cy="8" r="4" transform="rotate(240 100 100)"/>
+        <circle cx="100" cy="8" r="4" transform="rotate(270 100 100)"/>
+        <circle cx="100" cy="8" r="4" transform="rotate(300 100 100)"/>
+        <circle cx="100" cy="8" r="4" transform="rotate(330 100 100)"/>
+      </g>
+      <circle cx="100" cy="100" r="18" fill="#FFE08A"/>
+      <circle cx="100" cy="100" r="9" fill="#E4572E"/>
+    </symbol>
+  </svg>
+
+  <!-- Twinkling string lights -->
+  <div class="lights" aria-hidden="true">
+    <span class="bulb"></span><span class="bulb"></span><span class="bulb"></span><span class="bulb"></span>
+    <span class="bulb"></span><span class="bulb"></span><span class="bulb"></span><span class="bulb"></span>
+    <span class="bulb"></span><span class="bulb"></span><span class="bulb"></span><span class="bulb"></span>
+    <span class="bulb"></span><span class="bulb"></span><span class="bulb"></span><span class="bulb"></span>
+  </div>
+
+  <svg class="rangoli rangoli--tl" viewBox="0 0 200 200" aria-hidden="true" focusable="false"><use href="#rangoli-art"/></svg>
+  <svg class="rangoli rangoli--br" viewBox="0 0 200 200" aria-hidden="true" focusable="false"><use href="#rangoli-art"/></svg>
+
+  <div class="sparkles" id="sparkles" aria-hidden="true"></div>
+
+  <header class="site-header shell">
+    <a class="brand" href="#screen-intro" aria-label="Music Mood Mehfil home"><span class="brand-mark">♫</span><span>mood<br>mehfil<span class="brand-dot">.</span></span></a>
+    <a class="header-link" href="#screen-intro">TAKE THE SURVEY <span aria-hidden="true">↗</span></a>
+  </header>
+
+  <main class="shell">
+
+    <noscript>
+      <div class="card"><p>This survey needs JavaScript to work. Please enable it and refresh the page. 🙏</p></div>
+    </noscript>
+
+    <!-- Progress (shown only during the 4 question steps) -->
+    <nav class="progress" id="progress" aria-label="Survey progress" hidden>
+      <ol class="progress__dots">
+        <li data-dot="1"><span>1</span></li>
+        <li data-dot="2"><span>2</span></li>
+        <li data-dot="3"><span>3</span></li>
+        <li data-dot="4"><span>4</span></li>
+      </ol>
+      <p class="progress__text" id="progressText" aria-live="polite">Step 1 of 4</p>
+    </nav>
+
+    <!-- ============ INTRO ============ -->
+    <section class="screen card card--hero" id="screen-intro" aria-labelledby="intro-title">
+      <svg class="diya" viewBox="0 0 120 100" aria-hidden="true" focusable="false">
+        <ellipse class="diya__glow" cx="60" cy="30" rx="34" ry="30" fill="#FFD25A" opacity=".35"/>
+        <path class="diya__flame" d="M60 6 C72 24 78 36 60 52 C42 36 48 24 60 6 Z" fill="#FFA21F"/>
+        <path class="diya__flame diya__flame--inner" d="M60 24 C66 34 68 41 60 50 C52 41 54 34 60 24 Z" fill="#FFF0B3"/>
+        <path d="M10 56 H110 C106 82 86 94 60 94 C34 94 14 82 10 56 Z" fill="#E4572E"/>
+        <path d="M10 56 H110 C109 60 108 63 106 66 H14 C12 63 11 60 10 56 Z" fill="#F58A4B"/>
+        <circle cx="38" cy="78" r="3.4" fill="#FFD25A"/>
+        <circle cx="60" cy="83" r="3.4" fill="#FFD25A"/>
+        <circle cx="82" cy="78" r="3.4" fill="#FFD25A"/>
+      </svg>
+
+      <div class="hero-copy">
+      <h1 id="intro-title" tabindex="-1">What does your <span class="hl">music</span> say about you?</h1>
+      <p class="lead">Take 2 minutes to tell us how you listen. Your answers help us build a music recommender that truly gets people, not just the charts.</p>
+
+      <div class="nav nav--center">
+        <button type="button" class="btn btn--primary btn--big" data-start>Let's begin</button>
+      </div>
+      </div>
+      <div class="hero-art" aria-hidden="true">
+        <div class="art-panel"></div>
+        <span class="art-jp">音楽</span>
+        <div class="art-person">
+          <svg viewBox="0 0 350 470" role="presentation">
+            <path fill="#d7d7d3" d="M67 470c5-70 17-123 55-157 20-18 38-23 52-25l2-53c-35-17-53-51-53-94 0-63 31-103 86-103 55 0 83 40 83 103 0 46-19 78-52 95l3 51c21 5 47 16 67 39 25 29 34 76 39 144H67z"/>
+            <path fill="#252525" d="M119 138c-4-74 31-116 91-116 59 0 91 44 80 120-9-29-27-46-48-55-20 19-59 29-117 29l-6 22zm49 7c8-7 18-7 26 0m41 0c8-7 18-7 26 0m-53 42c14 10 28 10 42 0" fill-rule="evenodd"/>
+            <path fill="none" stroke="#202020" stroke-width="15" stroke-linecap="round" d="M111 168v-43c0-62 31-104 92-104s91 43 91 104v43"/>
+            <path fill="#202020" d="M100 151h27v66h-27c-13 0-23-10-23-23v-20c0-13 10-23 23-23zm210 0h-27v66h27c13 0 23-10 23-23v-20c0-13-10-23-23-23z"/>
+            <path fill="#202020" d="M136 290l38 34 39-28 39 29-28 66h-93z"/>
+            <path fill="#f15bb5" d="M111 370l64-46 38 32 40-32 66 46 31 100H72z"/>
+          </svg>
+        </div>
+        <span class="sticker sticker-record"><i></i></span>
+        <span class="sticker sticker-star">✳</span>
+        <span class="art-caption">YOUR TASTE<br>HAS A SOUNDTRACK</span>
+        <span class="art-wave">〰</span>
+      </div>
+    </section>
+
+    <!-- ============ SURVEY FORM ============ -->
+    <form id="surveyForm" novalidate autocomplete="off">
+
+      <!-- Honeypot: invisible to people, tempting to bots -->
+      <div class="hp" aria-hidden="true">
+        <label>Leave this field empty
+          <input type="text" name="hp_check" id="hpCheck" tabindex="-1" autocomplete="off">
+        </label>
+      </div>
+
+      <!-- STEP 1 -->
+      <section class="screen card" id="screen-1" aria-labelledby="title-1" hidden>
+        <h2 id="title-1" tabindex="-1">First, a little about you 👋</h2>
+        <p class="hint">Totally optional. Tap one, or just hit Next.</p>
+
+        <div class="question" role="group" aria-labelledby="q-gender">
+          <h3 class="q-title" id="q-gender">How do you identify?</h3>
+          <div id="group-gender"></div>
+        </div>
+
+        <div class="nav">
+          <span></span>
+          <button type="button" class="btn btn--primary" data-next>Next →</button>
+        </div>
+      </section>
+
+      <!-- STEP 2 -->
+      <section class="screen card" id="screen-2" aria-labelledby="title-2" hidden>
+        <h2 id="title-2" tabindex="-1">When do you press play? 🎧</h2>
+        <p class="hint">Tap everything that fits. All optional.</p>
+
+        <div class="question" role="group" aria-labelledby="q-mood">
+          <h3 class="q-title" id="q-mood">What mood or activity goes with your music?</h3>
+          <div id="group-mood"></div>
+        </div>
+
+        <div class="songs-panel" id="songsPanel" hidden>
+          <h3 class="q-title q-title--small">🎵 Got a song for these? <span class="optional">(optional)</span></h3>
+          <p class="hint hint--tight">Type a song you play in each situation.</p>
+          <div id="songsList"></div>
+        </div>
+
+        <div class="nav">
+          <button type="button" class="btn btn--ghost" data-prev>← Back</button>
+          <button type="button" class="btn btn--primary" data-next>Next →</button>
+        </div>
+      </section>
+
+      <!-- STEP 3 -->
+      <section class="screen card" id="screen-3" aria-labelledby="title-3" hidden>
+        <h2 id="title-3" tabindex="-1">Your comfort zone 🎶</h2>
+        <p class="hint">Almost there. Still all optional.</p>
+
+        <div class="question" role="group" aria-labelledby="q-comfort">
+          <h3 class="q-title" id="q-comfort">Your comfort songs</h3>
+          <p class="hint hint--tight">Songs you can play anytime, in any mood. Add up to 5.</p>
+          <div id="group-comfort"></div>
+        </div>
+
+        <div class="question" role="group" aria-labelledby="q-time">
+          <h3 class="q-title" id="q-time">When do you listen to the most music?</h3>
+          <p class="hint hint--tight">Pick as many as you like.</p>
+          <div id="group-time"></div>
+        </div>
+
+        <div class="nav">
+          <button type="button" class="btn btn--ghost" data-prev>← Back</button>
+          <button type="button" class="btn btn--primary" data-next>Next →</button>
+        </div>
+      </section>
+
+      <!-- STEP 4 -->
+      <section class="screen card" id="screen-4" aria-labelledby="title-4" hidden>
+        <h2 id="title-4" tabindex="-1">Help us fix recommendations 🛠️</h2>
+        <p class="hint">Think of Spotify, YouTube Music, JioSaavn, Gaana, Apple Music and friends.</p>
+
+        <div class="question" role="group" aria-labelledby="q-issues">
+          <h3 class="q-title" id="q-issues">What bugs you about their recommendations?</h3>
+          <div id="group-issues"></div>
+        </div>
+
+        <div class="question" role="group" aria-labelledby="q-ideal">
+          <h3 class="q-title" id="q-ideal">How would you like songs to be recommended?</h3>
+          <div id="group-ideal"></div>
+        </div>
+
+        <div class="question">
+          <label class="q-title" for="suggestion">Your idea, in your own words</label>
+          <textarea id="suggestion" name="suggestion" maxlength="600" rows="4"
+            placeholder="e.g. When I'm studying, suggest calm instrumentals I haven't heard before…"></textarea>
+          <p class="counter"><span id="suggestionCount">0</span> / 600</p>
+        </div>
+
+        <p class="form-message" id="formMessage" role="alert" hidden></p>
+
+        <div class="nav">
+          <button type="button" class="btn btn--ghost" data-prev>← Back</button>
+          <button type="submit" class="btn btn--primary btn--big" id="submitBtn">Submit &amp; light a diya 🪔</button>
+        </div>
+      </section>
+    </form>
+
+    <!-- ============ THANK YOU ============ -->
+    <section class="screen card card--hero" id="screen-thanks" aria-labelledby="thanks-title" hidden>
+      <h2 id="thanks-title" tabindex="-1">Thank you, and Happy Diwali! 🎉</h2>
+    </section>
+
+  </main>
+
+  <script src="js/app.js"></script>
+</body>
+</html>
