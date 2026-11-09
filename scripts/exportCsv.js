@@ -4,7 +4,8 @@
  *
  * Creates (in ./exports):
  *   responses.csv        one row per submitted form
- *   mood_song_pairs.csv  one row per (mood/activity -> song) answer; handy for ML
+ *   mood_song_pairs.csv  one row per (song -> mood/activity) link; handy for ML.
+ *                        A song with no mood picked gets one row with an empty mood.
  *
  * "participant" is a short piece of the scrambled anonymous id. Rows with the same
  * participant came from the same browser.
@@ -26,6 +27,8 @@ function csvCell(value) {
 const toRow = (cells) => cells.map(csvCell).join(',');
 const joinList = (list) => (list || []).join(' | ');
 const both = (c) => joinList([...(c?.selected || []), ...(c?.other || [])]);
+// Same "Title — Artist" text the search dropdown produces
+const songText = (s) => (s.artist ? `${s.title} \u2014 ${s.artist}` : s.title);
 
 async function run() {
   await connectDB();
@@ -33,8 +36,13 @@ async function run() {
   const wideHeader = [
     'participant', 'response_no', 'submitted_at', 'gender', 'moods_activities',
     'comfort_songs', 'listening_times', 'platform_issues', 'ideal_recommendations', 'suggestion',
+    'songs',
   ];
-  const pairHeader = ['participant', 'response_no', 'mood_or_activity', 'is_custom', 'song'];
+  // The first five columns are unchanged; the rest were added with the song-first form.
+  const pairHeader = [
+    'participant', 'response_no', 'mood_or_activity', 'is_custom', 'song',
+    'song_title', 'artist', 'album', 'genre', 'year', 'catalogue_id', 'song_source',
+  ];
 
   const wide = [toRow(wideHeader)];
   const pairs = [toRow(pairHeader)];
@@ -45,18 +53,31 @@ async function run() {
     person.submissions.forEach((sub, index) => {
       const responseNo = index + 1;
       const gender = [sub.gender?.choice, sub.gender?.other].filter(Boolean).join(' / ');
-      const moods = (sub.moodActivities || []).map((m) => m.label).join(' | ');
+      const songs = sub.songs || [];
+      const legacy = sub.moodActivities || [];
+      const moodLabels = [
+        ...new Set([...songs.flatMap((s) => (s.tags || []).map((t) => t.label)), ...legacy.map((m) => m.label)]),
+      ];
+      const moods = moodLabels.join(' | ');
 
       wide.push(
         toRow([
           participant, responseNo, sub.submittedAt ? new Date(sub.submittedAt).toISOString() : '',
           gender, moods, joinList(sub.comfortSongs), both(sub.listeningTimes),
           both(sub.platformIssues), both(sub.idealRecs), sub.suggestion,
+          songs.map((s) => `${songText(s)} [${(s.tags || []).map((t) => t.label).join(', ')}]`).join(' | '),
         ])
       );
 
-      (sub.moodActivities || []).forEach((m) => {
-        pairs.push(toRow([participant, responseNo, m.label, m.isCustom, m.song]));
+      songs.forEach((s) => {
+        const details = [s.title, s.artist, s.album, s.genre, s.year, s.externalId, s.source];
+        const tags = s.tags && s.tags.length ? s.tags : [{ label: '', isCustom: '' }];
+        tags.forEach((t) => pairs.push(toRow([participant, responseNo, t.label, t.isCustom, songText(s), ...details])));
+      });
+
+      // Responses saved by the older mood-first form
+      legacy.forEach((m) => {
+        pairs.push(toRow([participant, responseNo, m.label, m.isCustom, m.song, m.song, '', '', '', '', '', 'legacy']));
       });
     });
   }
@@ -67,7 +88,7 @@ async function run() {
   fs.writeFileSync(path.join(outDir, 'responses.csv'), `\uFEFF${wide.join('\n')}\n`);
   fs.writeFileSync(path.join(outDir, 'mood_song_pairs.csv'), `\uFEFF${pairs.join('\n')}\n`);
 
-  console.log(`Exported ${wide.length - 1} responses and ${pairs.length - 1} mood/song pairs to ./exports`);
+  console.log(`Exported ${wide.length - 1} responses and ${pairs.length - 1} song/mood rows to ./exports`);
   await mongoose.connection.close();
 }
 

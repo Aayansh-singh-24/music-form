@@ -65,7 +65,7 @@ Other easy hosts that work the same way: Railway, Koyeb, Fly.io.
 ## 3. Getting your data
 
 - Browse it in Atlas: **Browse Collections → participants**.
-- Or export CSVs: `npm run export` (needs the same `.env`). It writes `exports/responses.csv` (one row per submitted form) and `exports/mood_song_pairs.csv` (one row per mood/activity → song answer).
+- Or export CSVs: `npm run export` (needs the same `.env`). It writes `exports/responses.csv` (one row per submitted form) and `exports/mood_song_pairs.csv` (one row per song → mood/activity link, a song with no mood gets one row with an empty mood). The first five columns of `mood_song_pairs.csv` are the same as before; `song_title`, `artist`, `album`, `genre`, `year`, `catalogue_id` and `song_source` were added after them.
 
 ### How a response is stored
 
@@ -78,8 +78,14 @@ One document per anonymous person; each new form they submit is added to their `
   "submissions": [
     {
       "gender": { "choice": "Female", "other": "" },
-      "moodActivities": [{ "label": "Studying", "isCustom": false, "song": "Lofi beats" }],
-      "comfortSongs": ["Tum Hi Ho"],
+      "songs": [
+        {
+          "title": "Tum Hi Ho", "artist": "Arijit Singh", "album": "Aashiqui 2",
+          "genre": "Bollywood", "year": 2013, "externalId": "123456", "source": "search",
+          "tags": [{ "label": "Studying", "isCustom": false }, { "label": "Missing home", "isCustom": true }]
+        }
+      ],
+      "comfortSongs": ["Tum Hi Ho — Arijit Singh"],
       "listeningTimes": { "selected": ["Night (8 pm–12)"], "other": [] },
       "platformIssues": { "selected": ["Same songs keep repeating"], "other": [] },
       "idealRecs": { "selected": ["Based on my mood"], "other": [] },
@@ -90,11 +96,20 @@ One document per anonymous person; each new form they submit is added to their `
 }
 ```
 
+### Songs first, then moods
+
+On the second question page the person adds a song (once), then picks every mood/activity they listen to it in. Songs picked from the search keep Apple's song id (`externalId`), album, genre and year, so two songs with the same name stay distinguishable; songs typed by hand have `source: "manual"`. Responses saved by the older mood-first form still live in `moodActivities` and are included in the export.
+
+### Song search
+
+The song boxes use Apple's free iTunes Search API straight from the visitor's browser (allowed by `connectSrc` in `src/app.js`). Apple limits it to roughly 20 searches per minute per IP address. If search is unavailable the person can still type the song and press **+ Add**.
+
 ## How anonymity works
 
 - No name, phone, email or login is ever asked for. IP addresses are not stored in the database.
 - The visitor's browser creates a random code and keeps it in `localStorage`. The server scrambles it (HMAC-SHA256 with your `HASH_SECRET`) before saving, so the database never holds the raw code.
 - Same browser → same scrambled id → responses are grouped together. Clearing browser data, private mode or another device creates a new id.
+- Song search is the one exception to "nothing leaves your site": the text typed in a song box is sent from the visitor's browser to Apple's iTunes Search service, so Apple can see that visitor's IP address.
 
 ## Security included (kept simple)
 

@@ -8,6 +8,7 @@ function hasAnyAnswer(data) {
   return Boolean(
     data.gender.choice ||
       data.gender.other ||
+      data.songs.length ||
       data.moodActivities.length ||
       data.comfortSongs.length ||
       choiceHasData(data.listeningTimes) ||

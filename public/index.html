@@ -79,7 +79,6 @@
 
   <header class="site-header shell">
     <a class="brand" href="#screen-intro" aria-label="Music Mood Mehfil home"><span class="brand-mark">♫</span><span>mood<br>mehfil<span class="brand-dot">.</span></span></a>
-    <a class="header-link" href="#screen-intro">TAKE THE SURVEY <span aria-hidden="true">↗</span></a>
   </header>
 
   <main class="shell">
@@ -90,11 +89,11 @@
 
     <!-- Progress (shown only during the 4 question steps) -->
     <nav class="progress" id="progress" aria-label="Survey progress" hidden>
-      <ol class="progress__dots">
-        <li data-dot="1"><span>1</span></li>
-        <li data-dot="2"><span>2</span></li>
-        <li data-dot="3"><span>3</span></li>
-        <li data-dot="4"><span>4</span></li>
+      <ol class="progress__bars">
+        <li data-dot="1"></li>
+        <li data-dot="2"></li>
+        <li data-dot="3"></li>
+        <li data-dot="4"></li>
       </ol>
       <p class="progress__text" id="progressText" aria-live="polite">Step 1 of 4</p>
     </nav>
@@ -115,6 +114,7 @@
       <div class="hero-copy">
       <h1 id="intro-title" tabindex="-1">What does your <span class="hl">music</span> say about you?</h1>
       <p class="lead">Take 2 minutes to tell us how you listen. Your answers help us build a music recommender that truly gets people, not just the charts.</p>
+      <p class="anon-note">All the data you share is stored anonymously, and your identity is not revealed in any way.</p>
 
       <div class="nav nav--center">
         <button type="button" class="btn btn--primary btn--big" data-start>Let's begin</button>
@@ -169,16 +169,17 @@
       <!-- STEP 2 -->
       <section class="screen card" id="screen-2" aria-labelledby="title-2" hidden>
         <h2 id="title-2" tabindex="-1">When do you press play? 🎧</h2>
-        <p class="hint">Tap everything that fits. All optional.</p>
+        <p class="hint">Add a song first, then tell us when you play it. All optional.</p>
 
-        <div class="question" role="group" aria-labelledby="q-mood">
-          <h3 class="q-title" id="q-mood">What mood or activity goes with your music?</h3>
-          <div id="group-mood"></div>
+        <div class="question" role="group" aria-labelledby="q-songs">
+          <h3 class="q-title" id="q-songs">Which songs do you listen to?</h3>
+          <p class="hint hint--tight">Search and add each song only once. You can link it to as many moods and activities as you like.</p>
+          <div id="songAdder"></div>
         </div>
 
         <div class="songs-panel" id="songsPanel" hidden>
-          <h3 class="q-title q-title--small">🎵 Got a song for these? <span class="optional">(optional)</span></h3>
-          <p class="hint hint--tight">Type a song you play in each situation.</p>
+          <h3 class="q-title q-title--small" id="songsHeading">🎵 Your songs</h3>
+          <p class="hint hint--tight">For each song, pick the moods or activities you listen to it in.</p>
           <div id="songsList"></div>
         </div>
 

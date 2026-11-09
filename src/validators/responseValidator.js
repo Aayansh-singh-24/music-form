@@ -25,6 +25,26 @@ const choices = z
   })
   .default({});
 
+// One song (picked from the search, or typed in) plus the moods / activities linked to it.
+const songWithTags = z.object({
+  title: label(150),
+  artist: optionalText(150),
+  album: optionalText(150),
+  genre: optionalText(60),
+  year: z.number().int().min(1900).max(2100).nullable().optional().default(null),
+  externalId: optionalText(30), // the music catalogue's id for the song (empty for typed songs)
+  source: z.enum(['search', 'manual']).optional().default('manual'),
+  tags: z
+    .array(
+      z.object({
+        label: label(60),
+        isCustom: z.boolean().optional().default(false),
+      })
+    )
+    .max(40)
+    .default([]),
+});
+
 const responseSchema = z.object({
   // Random code generated in the visitor's browser (a UUID). Never a name or number.
   anonId: z.string().regex(/^[A-Za-z0-9-]{16,64}$/, 'Invalid anonymous id'),
@@ -39,6 +59,10 @@ const responseSchema = z.object({
     })
     .default({}),
 
+  // Songs first, each with its moods / activities.
+  songs: z.array(songWithTags).max(15).default([]),
+
+  // Older format (mood first, song second). Still accepted so visitors whose browser has the old page cached are not lost.
   moodActivities: z
     .array(
       z.object({

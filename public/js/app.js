@@ -115,6 +115,7 @@
     let timer = null;
     let controller = null;
     let sequence = 0;
+    let lastTracks = []; // the tracks currently listed, so a pick can return their full details
 
     const hide = () => {
       clearTimeout(timer);
@@ -155,16 +156,18 @@
           if (thisSequence !== sequence) return;
 
           const tracks = (data.results || []).filter((track) => track.trackName && track.artistName);
+          lastTracks = tracks;
           results.textContent = '';
           if (!tracks.length) {
             showStatus('No matching songs. You can still type your own.');
             return;
           }
 
-          tracks.forEach((track) => {
+          tracks.forEach((track, index) => {
             const option = el('button', 'song-search__result');
             option.type = 'button';
             option.setAttribute('role', 'option');
+            option.dataset.songIndex = String(index);
             option.dataset.songTitle = track.trackName;
             option.dataset.songArtist = track.artistName;
             option.append(
@@ -186,8 +189,9 @@
       const option = event.target.closest('[data-song-title]');
       if (!option) return;
       const song = tidy(`${option.dataset.songTitle} — ${option.dataset.songArtist}`, 100);
+      const track = lastTracks[Number(option.dataset.songIndex)];
       hide();
-      onSelect(song);
+      onSelect(song, track);
     });
     input.addEventListener('keydown', (event) => {
       if (event.key === 'Escape') hide();
@@ -233,6 +237,7 @@
      *   single       true => only one answer allowed (preset OR own)
      *   maxOwn       how many "own" answers are allowed
      *   maxLen       max length of one own answer
+     *   allowOwn     false => hide the "add your own" row (default true)
      *   ownLabel     small text above the input
      *   ownPlaceholder
      *   onChange     called after every change
@@ -247,6 +252,7 @@
       this.ownPlaceholder = cfg.ownPlaceholder || 'Type here…';
       this.onChange = cfg.onChange || (() => {});
       this.songSearch = Boolean(cfg.songSearch);
+      this.allowOwn = cfg.allowOwn !== false;
       this.selected = []; // preset labels (in tap order)
       this.customs = []; // own answers
       this.emojiByLabel = new Map();
@@ -318,7 +324,7 @@
       own.append(label, row);
       if (this.searchResults) own.appendChild(this.searchResults);
       own.appendChild(this.note);
-      this.root.appendChild(own);
+      if (this.allowOwn) this.root.appendChild(own); // when hidden, the row simply stays off the page
 
       // Events
       this.root.addEventListener('click', (event) => {
@@ -461,7 +467,6 @@
 
   /* ---------- Survey state ---------- */
 
-  const songsByTag = new Map(); // "Studying" -> "Lofi beats"
   let currentScreen = 'intro';
   let currentStep = 0;
   let sending = false;
@@ -480,21 +485,7 @@
   groups.gender = new ChipGroup($('#group-gender'), {
     sections: [{ options: GENDER }],
     single: true,
-    maxLen: 40,
-    ownLabel: 'Prefer to self-describe?',
-    ownPlaceholder: 'Type how you identify',
-  });
-
-  groups.mood = new ChipGroup($('#group-mood'), {
-    sections: [
-      { title: 'Moods', options: MOODS },
-      { title: 'Activities', options: ACTIVITIES },
-    ],
-    maxOwn: 6,
-    maxLen: 40,
-    ownLabel: 'Not listed? Add your own mood or activity',
-    ownPlaceholder: 'e.g. Missing home, Gardening…',
-    onChange: renderSongsPanel,
+    allowOwn: false,
   });
 
   groups.comfort = new ChipGroup($('#group-comfort'), {
@@ -536,54 +527,208 @@
     suggestionCount.textContent = String(suggestionBox.value.length);
   });
 
-  /* ---------- Mood → song panel ---------- */
+  /* ---------- Songs first: add a song, then link its moods and activities ---------- */
 
-  function renderSongsPanel() {
-    const panel = $('#songsPanel');
-    const list = $('#songsList');
-    const items = groups.mood.items();
+  const MAX_SONGS = 10;
+  const songRecs = []; // { data, group, card, setOpen }
+  const songsList = $('#songsList');
 
-    list.textContent = '';
-    panel.hidden = items.length === 0;
+  const songKey = (s) => (s.externalId ? `id:${s.externalId}` : `m:${s.title}|${s.artist}`.toLowerCase());
 
-    items.forEach((item) => {
-      const inputId = nextId('song');
-      const row = el('div', 'song-row');
-
-      const tag = el('label', 'song-tag');
-      tag.htmlFor = inputId;
-      const emoji = groups.mood.emojiFor(item.label);
-      if (emoji) {
-        const e = el('span', null, emoji);
-        e.setAttribute('aria-hidden', 'true');
-        tag.appendChild(e);
-      }
-      tag.appendChild(el('span', null, item.label));
-
-      const input = el('input', 'input');
-      const songField = el('div', 'song-field');
-      const searchResults = el('div', 'song-search');
-      searchResults.hidden = true;
-      input.type = 'text';
-      input.id = inputId;
-      input.maxLength = 100;
-      input.autocomplete = 'off';
-      input.placeholder = 'A song you play then';
-      input.value = songsByTag.get(item.label) || '';
-      input.addEventListener('input', () => songsByTag.set(item.label, input.value));
-      input.addEventListener('keydown', (event) => {
-        if (event.key === 'Enter') event.preventDefault();
-      });
-
-      songField.append(input, searchResults);
-      row.append(tag, songField);
-      list.appendChild(row);
-      attachSongSearch(input, searchResults, (song) => {
-        input.value = song;
-        songsByTag.set(item.label, song);
-      });
-    });
+  // Turns a track returned by the iTunes search into the song details we save.
+  function songFromTrack(track) {
+    const released = track.releaseDate ? new Date(track.releaseDate).getUTCFullYear() : null;
+    return {
+      title: tidy(track.trackName, 150),
+      artist: tidy(track.artistName, 150),
+      album: tidy(track.collectionName, 150),
+      genre: tidy(track.primaryGenreName, 60),
+      year: Number.isInteger(released) && released >= 1900 && released <= 2100 ? released : null,
+      externalId: /^\d{1,20}$/.test(String(track.trackId || '')) ? String(track.trackId) : '',
+      source: 'search',
+    };
   }
+
+  const typedSong = (title) => ({ title, artist: '', album: '', genre: '', year: null, externalId: '', source: 'manual' });
+
+  function addSong(song) {
+    if (songRecs.length >= MAX_SONGS) {
+      return `You can add up to ${MAX_SONGS} songs. Remove one to add another.`;
+    }
+    const key = songKey(song);
+    if (songRecs.some((r) => r.data.key === key)) return 'You have already added this song.';
+
+    const rec = buildSongCard({ ...song, key });
+    songRecs.push(rec);
+    songsList.appendChild(rec.card);
+
+    // Open the new card so its moods can be picked straight away; close the others.
+    songRecs.forEach((other) => other.setOpen(other === rec));
+    updateSongsHeading();
+    rec.card.scrollIntoView({ behavior: prefersReducedMotion ? 'auto' : 'smooth', block: 'nearest' });
+    return null;
+  }
+
+  function removeSong(rec) {
+    const index = songRecs.indexOf(rec);
+    if (index < 0) return;
+    songRecs.splice(index, 1);
+    rec.card.remove();
+    updateSongsHeading();
+  }
+
+  function updateSongsHeading() {
+    $('#songsPanel').hidden = songRecs.length === 0;
+    $('#songsHeading').textContent = `🎵 Your songs (${songRecs.length})`;
+  }
+
+  function buildSongCard(data) {
+    const rec = { data };
+    let isOpen = false;
+
+    const card = el('div', 'song-card');
+    const head = el('div', 'song-card__head');
+    const text = el('div', 'song-card__text');
+    text.appendChild(el('p', 'song-card__title', data.title));
+    const meta = [data.artist, data.album].filter(Boolean).join(' · ');
+    if (meta) text.appendChild(el('p', 'song-card__meta', meta));
+    const removeBtn = el('button', 'btn btn--ghost btn--small', 'Remove');
+    removeBtn.type = 'button';
+    removeBtn.setAttribute('aria-label', `Remove ${data.title}`);
+    head.append(text, removeBtn);
+
+    const body = el('div', 'song-card__body');
+    const tagsRow = el('div', 'song-card__tags');
+    const toggle = el('button', 'btn btn--ghost btn--small');
+    toggle.type = 'button';
+    toggle.setAttribute('aria-expanded', 'false');
+
+    const picker = el('div', 'song-card__picker');
+    picker.hidden = true;
+    const mount = el('div');
+    const doneRow = el('div', 'nav');
+    const doneBtn = el('button', 'btn btn--primary btn--small', 'Done');
+    doneBtn.type = 'button';
+    doneRow.appendChild(doneBtn);
+    picker.append(mount, doneRow);
+
+    body.append(tagsRow, toggle, picker);
+    card.append(head, body);
+
+    function renderTags() {
+      tagsRow.textContent = '';
+      const items = rec.group.items();
+      if (items.length === 0) {
+        tagsRow.appendChild(el('span', 'song-card__none', 'No mood or activity picked yet'));
+      } else {
+        items.forEach((item) => {
+          const emoji = rec.group.emojiFor(item.label);
+          tagsRow.appendChild(el('span', 'tag', emoji ? `${emoji} ${item.label}` : item.label));
+        });
+      }
+      toggle.textContent = isOpen
+        ? 'Hide moods & activities'
+        : items.length
+          ? 'Edit moods & activities'
+          : 'Pick moods & activities';
+    }
+
+    rec.setOpen = (open) => {
+      isOpen = open;
+      picker.hidden = !open;
+      toggle.setAttribute('aria-expanded', String(open));
+      renderTags();
+    };
+
+    rec.group = new ChipGroup(mount, {
+      sections: [
+        { title: 'Moods', options: MOODS },
+        { title: 'Activities', options: ACTIVITIES },
+      ],
+      maxOwn: 6,
+      maxLen: 40,
+      ownLabel: 'Not listed? Add your own mood or activity',
+      ownPlaceholder: 'e.g. Missing home, Gardening…',
+      onChange: renderTags,
+    });
+
+    toggle.addEventListener('click', () => rec.setOpen(!isOpen));
+    doneBtn.addEventListener('click', () => {
+      rec.setOpen(false);
+      toggle.focus();
+    });
+    removeBtn.addEventListener('click', () => removeSong(rec));
+
+    rec.card = card;
+    renderTags();
+    return rec;
+  }
+
+  // The "add a song" box: same look as the other "add your own" rows, with the iTunes search dropdown.
+  const songAdder = (() => {
+    const inputId = nextId('song-add');
+    const own = el('div', 'own own--song-search');
+    const label = el('label', 'own__label', 'Type a song name (and artist if you like), then tap the right match');
+    label.htmlFor = inputId;
+    const row = el('div', 'own__row');
+    const input = el('input', 'input');
+    input.type = 'text';
+    input.id = inputId;
+    input.maxLength = 100;
+    input.autocomplete = 'off';
+    input.placeholder = 'e.g. Tum Hi Ho, Arijit Singh';
+    const addBtn = el('button', 'btn btn--add', '+ Add');
+    addBtn.type = 'button';
+    row.append(input, addBtn);
+    const results = el('div', 'song-search');
+    results.hidden = true;
+    const note = el('p', 'own__note');
+    note.hidden = true;
+    own.append(label, row, results, note);
+    $('#songAdder').appendChild(own);
+
+    const showNote = (message) => {
+      note.textContent = message;
+      note.hidden = false;
+    };
+
+    // Adds what is typed (when nothing was picked from the dropdown). Returns true if a song was added.
+    const addTyped = () => {
+      const typed = tidy(input.value, 100);
+      if (!typed) return false;
+      const problem = addSong(typedSong(typed));
+      if (problem) {
+        showNote(problem);
+        return false;
+      }
+      input.value = '';
+      note.hidden = true;
+      return true;
+    };
+
+    attachSongSearch(input, results, (songText, track) => {
+      const problem = addSong(track ? songFromTrack(track) : typedSong(songText));
+      if (problem) {
+        showNote(problem);
+        return;
+      }
+      input.value = '';
+      note.hidden = true;
+    });
+
+    addBtn.addEventListener('click', addTyped);
+    input.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter') {
+        event.preventDefault(); // Enter should add the song, not submit the form
+        addTyped();
+      }
+    });
+    input.addEventListener('input', () => {
+      note.hidden = true;
+    });
+
+    return { commitPending: addTyped };
+  })();
 
   /* ---------- Screens & progress ---------- */
 
@@ -609,12 +754,10 @@
     progress.hidden = currentStep === 0;
     if (currentStep === 0) return;
 
-    $$('.progress__dots li').forEach((li) => {
-      const n = Number(li.dataset.dot);
-      li.classList.toggle('is-done', n < currentStep);
-      li.classList.toggle('is-current', n === currentStep);
-      const number = $('span', li);
-      number.textContent = n < currentStep ? '✓' : String(n);
+    $$('.progress__bars li').forEach((bar) => {
+      const n = Number(bar.dataset.dot);
+      bar.classList.toggle('is-done', n < currentStep);
+      bar.classList.toggle('is-current', n === currentStep);
     });
     $('#progressText').textContent = `Step ${currentStep} of ${TOTAL_STEPS}`;
   }
@@ -642,6 +785,8 @@
   function buildPayload() {
     // Add anything typed but not yet "added"
     Object.values(groups).forEach((g) => g.commitPending());
+    songRecs.slice().forEach((rec) => rec.group.commitPending());
+    songAdder.commitPending();
 
     return {
       anonId: getAnonId(),
@@ -650,10 +795,15 @@
         choice: groups.gender.selected[0] || '',
         other: groups.gender.customs[0] || '',
       },
-      moodActivities: groups.mood.items().map((item) => ({
-        label: item.label,
-        isCustom: item.isCustom,
-        song: tidy(songsByTag.get(item.label), 100),
+      songs: songRecs.map((rec) => ({
+        title: rec.data.title,
+        artist: rec.data.artist,
+        album: rec.data.album,
+        genre: rec.data.genre,
+        year: rec.data.year,
+        externalId: rec.data.externalId,
+        source: rec.data.source,
+        tags: rec.group.items().map((item) => ({ label: item.label, isCustom: item.isCustom })),
       })),
       comfortSongs: groups.comfort.customs.slice(),
       listeningTimes: choicePayload(groups.time),
@@ -668,7 +818,7 @@
     return Boolean(
       p.gender.choice ||
         p.gender.other ||
-        p.moodActivities.length ||
+        p.songs.length ||
         p.comfortSongs.length ||
         has(p.listeningTimes) ||
         has(p.platformIssues) ||
